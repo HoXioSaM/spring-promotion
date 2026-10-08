@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>春促客户经理考勤与拜访统计</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: #f0f2f5; color: #333; padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #0066cc, #003d7a);
+            color: white; padding: 24px 30px; border-radius: 12px;
+            margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,60,140,0.3);
+            position: relative;
+        }
+        .header h1 { font-size: 22px; margin-bottom: 8px; }
+        .header .subtitle { font-size: 14px; opacity: 0.85; }
+        .header .update-time { position: absolute; right: 24px; top: 24px; font-size: 13px; opacity: 0.7; }
+        .header .refresh-indicator { position: absolute; right: 24px; bottom: 20px; font-size: 12px; opacity: 0.6; }
+        .header .refresh-indicator.spin { animation: spin 1s linear infinite; }
+
+        .date-bar {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 16px; background: white;
+            padding: 12px 20px; border-radius: 10px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+        }
+        .date-bar label { font-size: 14px; font-weight: 600; color: #555; }
+        .date-bar select {
+            padding: 6px 12px; border: 1px solid #ddd; border-radius: 6px;
+            font-size: 14px; color: #333; cursor: pointer;
+        }
+        .date-bar select:hover { border-color: #0066cc; }
+        .date-bar .current-tag { background: #0066cc; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .date-bar .history-tag { background: #faad14; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+
+        .stats-cards {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px; margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white; padding: 20px; border-radius: 10px;
+            text-align: center; box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-card .number { font-size: 32px; font-weight: bold; }
+        .stat-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+        .stat-card.ok .number { color: #52c41a; }
+        .stat-card.err .number { color: #f5222d; }
+        .stat-card.warn .number { color: #faad14; }
+        .stat-card.info .number { color: #1890ff; }
+
+        .section {
+            background: white; border-radius: 10px; padding: 20px;
+            margin-bottom: 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+        }
+        .section h2 {
+            font-size: 16px; color: #0066cc; border-left: 4px solid #0066cc;
+            padding-left: 10px; margin-bottom: 16px;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f5f7fa; padding: 10px 8px; text-align: left; font-weight: 600; color: #555; }
+        td { padding: 8px; border-bottom: 1px solid #eee; }
+        tr:hover td { background: #f9fbff; }
+        .name { font-weight: 600; color: #0066cc; }
+        .ok { color: #52c41a; }
+        .err { color: #f5222d; }
+        .warn { color: #faad14; }
+
+        .industry-cards { display: flex; gap: 12px; flex-wrap: wrap; }
+        .industry-card { flex: 1; min-width: 150px; background: #f5f7fa; border-radius: 8px; padding: 14px; text-align: center; }
+        .industry-name { font-weight: 600; margin-bottom: 8px; color: #333; }
+        .industry-stats { display: flex; justify-content: space-around; font-size: 12px; color: #666; }
+        .rate-ok { color: #52c41a; font-weight: bold; }
+        .rate-warn { color: #faad14; font-weight: bold; }
+        .rate-err { color: #f5222d; font-weight: bold; }
+
+        .footer { text-align: center; color: #999; font-size: 12px; padding: 20px 0; }
+        .loading { text-align: center; padding: 40px; color: #999; font-size: 16px; }
+        .error-msg { text-align: center; padding: 40px; color: #f5222d; font-size: 16px; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+<script>window.__EMBEDDED_DATA__ = {"date": "2026-10-08", "sheet_name": "8日", "updated_at": "2026-10-08 12:00:00", "check_type": "morning", "total": 2, "total_all": 2, "leave_count": 0, "checked_in": 2, "checked_out": 1, "required_visits": 3, "industry_stats": {"政企": {"total": 2, "checked_in": 2, "checked_out": 1, "visit_complete": 1}}, "managers": [{"seq": 1, "industry": "政企", "name": "张*", "visit_count": 3, "has_checked_in": true, "has_checked_out": true, "is_on_leave": false, "visits": [{"unit": "测试公司A", "contact": "138****5678", "matter": "商谈合作"}], "business_dev": "新增宽带", "remark": ""}, {"seq": 2, "industry": "政企", "name": "欧**", "visit_count": 1, "has_checked_in": true, "has_checked_out": false, "is_on_leave": false, "visits": [{"unit": "测试公司B", "contact": "139****4321", "matter": "客户回访"}], "business_dev": "", "remark": ""}], "masked": true};</script></head>
+<body>
+    <div class="header">
+        <h1>春促客户经理考勤与拜访统计</h1>
+        <div class="subtitle" id="subtitle">加载中...</div>
+        <div class="update-time" id="updateTime">--</div>
+        <div class="refresh-indicator" id="refreshIndicator"></div>
+    </div>
+
+    <div class="date-bar" id="dateBar">
+        <label>选择日期：</label>
+        <select id="dateSelect" onchange="onDateChange()">
+            <option value="">加载中...</option>
+        </select>
+        <span id="dateTag" class="current-tag">当天</span>
+    </div>
+
+    <div class="stats-cards" id="statsCards"></div>
+
+    <div class="section">
+        <h2>行业完成情况</h2>
+        <div class="industry-cards" id="industryCards"><div class="loading">加载中...</div></div>
+    </div>
+
+    <div class="section">
+        <h2>打卡 / 签退 / 拜访状态</h2>
+        <table>
+            <thead><tr><th>序号</th><th>行业</th><th>姓名</th><th>打卡状态</th><th>签退状态</th><th>拜访次数</th><th>业务发展</th><th>备注</th></tr></thead>
+            <tbody id="statusBody"><tr><td colspan="8" class="loading">加载中...</td></tr></tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>拜访明细</h2>
+        <table>
+            <thead><tr><th>序号</th><th>发送人</th><th>行业</th><th>拜访客户单位</th><th>拜访人/联系电话</th><th>拜访事项</th></tr></thead>
+            <tbody id="visitBody"><tr><td colspan="6" class="loading">加载中...</td></tr></tbody>
+        </table>
+    </div>
+
+    <div class="footer">数据来源：量子密信金山文档 | 系统自动采集统计 | 每小时自动刷新</div>
+
+    <script>
+        var availableDates = [];
+        var currentDate = null;
+        var isTodayView = true;
+
+        // 静态快照模式：数据已内嵌在 window.__EMBEDDED_DATA__ 中，直接渲染，不发请求
+        var EMBEDDED = window.__EMBEDDED_DATA__ || null;
+        if (EMBEDDED) {
+            document.getElementById('dateBar').style.display = 'none'; // 静态快照仅展示当天，隐藏历史切换
+            renderDashboard(EMBEDDED);
+        } else {
+            fetchDates().then(function() { fetchData(); });
+            setInterval(fetchDates, 300000);
+            setInterval(fetchData, 60000);
+        }
+
+        async function fetchDates() {
+            try {
+                var resp = await fetch('/api/dates?t=' + Date.now());
+                var data = await resp.json();
+                availableDates = data.dates || [];
+                currentDate = data.current_date;
+                renderDateSelector();
+            } catch(e) { console.error('dates error:', e); }
+        }
+
+        function renderDateSelector() {
+            var sel = document.getElementById('dateSelect');
+            var html = '';
+            if (currentDate) {
+                html += '<option value="' + currentDate + '">' + currentDate + ' (当天)</option>';
+            }
+            for (var i = 0; i < availableDates.length; i++) {
+                if (availableDates[i] !== currentDate) {
+                    html += '<option value="' + availableDates[i] + '">' + availableDates[i] + '</option>';
+                }
+            }
+            if (!html) html = '<option value="">暂无数据</option>';
+            sel.innerHTML = html;
+            if (isTodayView && currentDate) sel.value = currentDate;
+        }
+
+        function onDateChange() {
+            var sel = document.getElementById('dateSelect');
+            var tag = document.getElementById('dateTag');
+            if (sel.value === currentDate) {
+                isTodayView = true;
+                tag.className = 'current-tag'; tag.textContent = '当天';
+                fetchData();
+            } else {
+                isTodayView = false;
+                tag.className = 'history-tag'; tag.textContent = '历史';
+                fetchHistoryData(sel.value);
+            }
+        }
+
+        async function fetchData() {
+            if (!isTodayView) return;
+            var ind = document.getElementById('refreshIndicator');
+            ind.textContent = '刷新中...'; ind.classList.add('spin');
+            try {
+                var resp = await fetch('/api/current?t=' + Date.now());
+                if (!resp.ok) throw new Error('no data');
+                var data = await resp.json();
+                renderDashboard(data);
+                ind.textContent = '已更新';
+            } catch(e) {
+                document.getElementById('statusBody').innerHTML = '<tr><td colspan="8" class="error-msg">暂无数据，等待首次采集...</td></tr>';
+                document.getElementById('visitBody').innerHTML = '<tr><td colspan="6" class="error-msg">暂无数据</td></tr>';
+                ind.textContent = '等待数据';
+            }
+            setTimeout(function() { ind.classList.remove('spin'); }, 500);
+        }
+
+        async function fetchHistoryData(targetDate) {
+            var ind = document.getElementById('refreshIndicator');
+            ind.textContent = '加载历史...'; ind.classList.add('spin');
+            try {
+                var resp = await fetch('/api/history?date=' + targetDate + '&t=' + Date.now());
+                if (!resp.ok) throw new Error('no data');
+                var data = await resp.json();
+                var managers = data.managers || [];
+                var stats = {};
+                for (var i = 0; i < managers.length; i++) {
+                    var ind2 = managers[i].industry;
+                    if (!stats[ind2]) stats[ind2] = {total:0, checked_in:0, checked_out:0, visit_complete:0};
+                    stats[ind2].total++;
+                    if (managers[i].has_checked_in) stats[ind2].checked_in++;
+                    if (managers[i].has_checked_out) stats[ind2].checked_out++;
+                    if (managers[i].visit_count >= 3) stats[ind2].visit_complete++;
+                }
+                renderDashboard({
+                    date: data.date, sheet_name: data.sheet_name,
+                    updated_at: data.timestamp || data.date,
+                    total: data.summary.total, checked_in: data.summary.checked_in,
+                    checked_out: data.summary.checked_out, required_visits: 3,
+                    industry_stats: stats, managers: managers
+                });
+                ind.textContent = '历史数据';
+            } catch(e) {
+                document.getElementById('statusBody').innerHTML = '<tr><td colspan="8" class="error-msg">该日期暂无数据</td></tr>';
+                document.getElementById('visitBody').innerHTML = '<tr><td colspan="6" class="error-msg">该日期暂无数据</td></tr>';
+                ind.textContent = '无数据';
+            }
+            setTimeout(function() { ind.classList.remove('spin'); }, 500);
+        }
+
+        function renderDashboard(data) {
+            var m = data.managers || [];
+            var total = data.total || m.length;
+            var checkedIn = data.checked_in || 0;
+            var checkedOut = data.checked_out || 0;
+            var notCheckedIn = total - checkedIn;
+            var visitRate = total > 0 ? Math.round(checkedOut / total * 100) : 0;
+            var reqVisits = data.required_visits || 3;
+
+            document.getElementById('subtitle').textContent =
+                '日期：' + (data.date || '--') + ' | 工作表：' + (data.sheet_name || '--') + ' | 拜访要求：' + reqVisits + '次/天';
+            document.getElementById('updateTime').textContent = '最后更新：' + (data.updated_at || '--');
+
+            document.getElementById('statsCards').innerHTML =
+                '<div class="stat-card info"><div class="number">' + total + '</div><div class="label">应到人数</div></div>' +
+                '<div class="stat-card ok"><div class="number">' + checkedIn + '</div><div class="label">已填报</div></div>' +
+                '<div class="stat-card err"><div class="number">' + notCheckedIn + '</div><div class="label">未填报</div></div>' +
+                '<div class="stat-card ok"><div class="number">' + checkedOut + '</div><div class="label">拜访达标</div></div>' +
+                '<div class="stat-card warn"><div class="number">' + visitRate + '%</div><div class="label">拜访完成率</div></div>';
+
+            var stats = data.industry_stats || {};
+            var indHtml = '';
+            for (var ind3 in stats) {
+                var s = stats[ind3];
+                var rate = s.total > 0 ? Math.round(s.visit_complete / s.total * 100) : 0;
+                var rc = rate === 100 ? 'rate-ok' : rate >= 50 ? 'rate-warn' : 'rate-err';
+                indHtml += '<div class="industry-card"><div class="industry-name">' + ind3 + '</div>' +
+                    '<div class="industry-stats"><span>' + s.total + '人</span>' +
+                    '<span>完成' + s.visit_complete + '/' + s.total + '</span>' +
+                    '<span class="' + rc + '">' + rate + '%</span></div></div>';
+            }
+            document.getElementById('industryCards').innerHTML = indHtml || '<div class="loading">暂无数据</div>';
+
+            var statusHtml = '';
+            for (var i = 0; i < m.length; i++) {
+                var p = m[i];
+                var onLeave = p.is_on_leave;
+                var cs, os, vc, visitDisplay;
+                if (onLeave) {
+                    cs = '<span class="warn">产假</span>';
+                    os = '<span class="warn">产假</span>';
+                    vc = 'warn';
+                    visitDisplay = '产假';
+                } else {
+                    cs = p.has_checked_in ? '<span class="ok">已填报</span>' : '<span class="err">未填报</span>';
+                    if (p.has_checked_out) os = '<span class="ok">已完成</span>';
+                    else if (p.visit_count > 0) os = '<span class="warn">' + p.visit_count + '/' + reqVisits + '次</span>';
+                    else os = '<span class="err">未开始</span>';
+                    vc = p.visit_count >= reqVisits ? 'ok' : p.visit_count > 0 ? 'warn' : 'err';
+                    visitDisplay = p.visit_count + '/' + reqVisits;
+                }
+                statusHtml += '<tr><td>' + p.seq + '</td><td>' + p.industry + '</td>' +
+                    '<td class="name">' + p.name + '</td><td>' + cs + '</td><td>' + os + '</td>' +
+                    '<td class="' + vc + '">' + visitDisplay + '</td>' +
+                    '<td>' + (p.business_dev || '') + '</td><td>' + (p.remark || '') + '</td></tr>';
+            }
+            document.getElementById('statusBody').innerHTML = statusHtml || '<tr><td colspan="8" class="loading">暂无数据</td></tr>';
+
+            var visitHtml = '';
+            var idx = 1;
+            for (var i = 0; i < m.length; i++) {
+                var visits = m[i].visits || [];
+                for (var j = 0; j < visits.length; j++) {
+                    var v = visits[j];
+                    visitHtml += '<tr><td>' + idx + '</td><td class="name">' + m[i].name + '</td>' +
+                        '<td>' + m[i].industry + '</td><td>' + (v.unit || '') + '</td>' +
+                        '<td>' + (v.contact || '') + '</td><td>' + (v.matter || '') + '</td></tr>';
+                    idx++;
+                }
+            }
+            document.getElementById('visitBody').innerHTML = visitHtml || '<tr><td colspan="6" class="loading">暂无拜访记录</td></tr>';
+        }
+
+    </script>
+</body>
+</html>
